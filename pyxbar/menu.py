@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import shlex
 import subprocess
@@ -13,100 +12,24 @@ from typing import (
     ClassVar,
     Generator,
     Iterable,
-    Optional,
-    Protocol,
-    TypeVar,
+    Sequence,
     Union,
+    cast,
     get_type_hints,
 )
 
+from pyxbar.config import Config, get_config
+from pyxbar.types import BoolNone, Renderable, RenderableGenerator
+from pyxbar.utils import with_something
+
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
-
-
-BoolNone = Optional[bool]
-
-RenderableGenerator = Generator[str, None, None]
-
-
-class Renderable(Protocol):
-    def render(self, depth: int = 0) -> RenderableGenerator:
-        ...
-
-
-# ---------------------------------------------------------------------------- #
-#                                    config                                    #
-# ---------------------------------------------------------------------------- #
-
-
-@dataclass
-class Config:
-    DEBUG: bool = False
-
-    _errors: list[str] = field(init=False, default_factory=list)
-    _warnings: list[str] = field(init=False, default_factory=list)
-
-    def __post_init__(self):
-        config_path = Path(__file__ + ".vars.json")
-        if not config_path.exists():
-            self.warn(f"{config_path.name} is missing, using defaults")
-
-        else:
-            config = json.loads(config_path.read_text())
-            hints = get_type_hints(Config)
-            for k in self.__dataclass_fields__:
-                if k == "errors":
-                    continue
-
-                if val := config.get(f"VAR_{k}"):
-                    setattr(self, k, hints[k](val))
-                elif self.DEBUG:
-                    self.warn(f"{k} is not set, using `{getattr(self, k)}`")
-
-                if isinstance(v := getattr(self, k), Path):
-                    setattr(self, k, v := v.expanduser())
-                    if not v.exists():
-                        self.error(f"{k} does not exist at {v}")
-
-                if self.DEBUG:
-                    logger.debug(f"{k}: {getattr(self, k)}")
-
-    def render(self, depth: int = 0) -> RenderableGenerator:
-        depth_prefix = f"{'--' * depth}"
-        for title, color, preifx, messages in (
-            ("errors", "red", "❌", self._errors),
-            ("warnings", "yellow", "⚠️", self._warnings),
-        ):
-            if messages:
-                yield from Divider().render(depth)
-                yield from MenuItem(title, color=color).render(depth)
-                for msg in sorted(messages):
-                    yield from MenuItem(f"{depth_prefix} {preifx} {msg}").render(depth)
-
-        if self.DEBUG:
-            MenuItem("Vars").with_submenu(
-                MenuItem(f"{k}: {getattr(self, k)}") for k in self.__dataclass_fields__
-            ).render(depth + 1)
-            # yield Cmd(f"📝 Edit Vars", f"open '{__file__}.vars.json'", depth=2)
-
-    def error(self, msg: str):
-        self._errors.append(msg)
-
-    def warn(self, msg: str):
-        self._warnings.append(msg)
-
-
-CONFIG = Config()
-# ---------------------------------------------------------------------------- #
-#                                 menu classes                                 #
-# ---------------------------------------------------------------------------- #
 
 
 @dataclass
 class Menu:
     title: str
     items: list[Renderable] = field(default_factory=list, init=False)
-    config: Config = field(default_factory=Config, init=False)
 
     def render(self) -> Any:
         return "\n".join(
@@ -114,7 +37,7 @@ class Menu:
                 self.title,
                 "---",
                 *self._items(),
-                *CONFIG.render(),
+                *get_config().render(),  # type: ignore
             )
         )
 
@@ -173,7 +96,11 @@ class MenuItem:
 
     @property
     def config(self) -> Config:
-        return self.parent.config
+        return get_config()
+
+    @property
+    def logger(self) -> logging.Logger:
+        return logger
 
     def depth_prefix(self, depth: int = 0) -> str:
         return f"{'--' * depth}{' ' if depth and not self.is_divider else ''}"
@@ -222,19 +149,11 @@ class MenuItem:
             for item in self.siblings:
                 yield from item.render(depth)
 
-    def add_submenu(self, child: MenuItem) -> MenuItem:
-        self.submenu.append(child)
-        return self
-
     def with_submenu(self, *children: Renderable | Iterable[Renderable]) -> MenuItem:
         return with_something(self, self.submenu, *children)
 
     def with_siblings(self, *children: Renderable | Iterable[Renderable]) -> MenuItem:
         return with_something(self, self.siblings, *children)
-
-    def with_parent(self, parent: Menu | MenuItem) -> MenuItem:
-        self.parent = parent
-        return self
 
 
 @dataclass
@@ -253,7 +172,7 @@ class ShellItem(MenuItem):
         cwd: Union[str, Path, None] = None,
         **kwargs: Any,
     ):
-        super().__init__(title, shell=shell, **kwargs)
+        super().__init__(title=title, shell=shell, **kwargs)
         self.cwd = cwd
 
     def __post_init__(self):
@@ -261,7 +180,7 @@ class ShellItem(MenuItem):
             self.cwd = Path(self.cwd)
 
         if self.cwd and not self.cwd.exists():
-            CONFIG.error(f"❌ cwd does not exist at {self.cwd}")
+            self.config.error(f"❌ cwd does not exist at {self.cwd}")
 
         if self.shell and not self.params:
             self.shell, *self.params = (quote(_) for _ in shlex.split(self.shell))
@@ -278,62 +197,16 @@ class ShellItem(MenuItem):
         return " ".join(self.shell_params(use_cwd=use_cwd))
 
     def subclass_render_hook(self, depth: int = 0) -> Generator[Renderable, None, None]:
-        if CONFIG.DEBUG:
+        if self.config.DEBUG:
             yield MenuItem(
-                f"╰─ {self.shell_str(use_cwd=False)}", font="Andale Mono", disabled=True
+                title=f"╰─ {self.shell_str(use_cwd=False)}",
+                font=get_config().MONO_FONT,
+                disabled=True,
             )
 
     def run(self) -> str:
         shell_params = list(self.shell_params(use_cwd=False))
-        if CONFIG.DEBUG:
-            logger.debug(f"running: {shell_params}")
+        if self.config.DEBUG:
+            self.logger.debug(f"running: {shell_params}")
         output = subprocess.check_output(shell_params, cwd=self.cwd)
         return output.decode("utf-8").strip()
-
-
-# ---------------------------------------------------------------------------- #
-#                               utility functions                              #
-# ---------------------------------------------------------------------------- #
-
-
-def get_in(
-    keys: str | list[str],
-    coll: dict[object, object] | list[object],
-    default: object = (_no_default := object()),
-) -> Generator[object, None, None]:
-    try:
-        key, *keys = keys.split(".") if isinstance(keys, str) else keys
-        if key == "*":
-            for i in range(len(coll)):
-                yield from get_in([i, *keys], coll, default)
-        elif not keys:
-            yield coll[key]
-        else:
-            yield from get_in(keys, coll[key], default)
-    except (KeyError, IndexError, TypeError):
-        if default is not _no_default:
-            yield default
-
-
-T = TypeVar("T")
-
-
-def with_something(
-    ret: T,
-    key: list[Renderable],
-    *children: Renderable | Iterable[Renderable],
-) -> T:
-    for child in children:
-        if isinstance(child, Iterable):
-            key.extend(child)
-        else:
-            key.append(child)
-    return ret
-
-
-if __name__ == "__main__":
-    Menu("some title").with_items(
-        MenuItem(
-            "👁️ overview",
-        ),
-    ).print()

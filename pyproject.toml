@@ -1,0 +1,14 @@
+[project]
+name = "pyxbar"
+description = "helper functions for xbar menus"
+authors = [{ name = "Adam Hitchcock" }]
+requires-python = ">=3.9"
+dynamic = ["version", "readme"]
+
+[build-system]
+requires = ["setuptools>=62.1.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+readme = { file = ["README.md"], content-type = "text/markdown" }
+version = { attr = "pyxbar.__version__" }
