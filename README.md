@@ -11,7 +11,7 @@ def install(pkg: str, spec: str = ""):
         __import__(pkg)
 
 
-install("pyxbar", "pyxbar>=0.2.1")
+install("pyxbar")
 
 
 from pyxbar import (  # noqa: E402
