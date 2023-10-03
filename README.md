@@ -30,4 +30,5 @@ class MyConfig(Config):
     ...
 
 CONFIG = get_config(MyConfig)  # type: ignore
-)```
+)
+```
