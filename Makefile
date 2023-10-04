@@ -7,5 +7,6 @@ build: clean
 
 upload: export TWINE_USERNAME = __token__
 upload: build
+	git push origin main
 	python3 -m pip install --upgrade twine
 	python3 -m twine upload dist/*
