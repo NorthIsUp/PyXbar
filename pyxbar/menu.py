@@ -12,14 +12,12 @@ from typing import (
     ClassVar,
     Generator,
     Iterable,
-    Sequence,
     Union,
-    cast,
     get_type_hints,
 )
 
 from pyxbar.config import Config, get_config
-from pyxbar.types import BoolNone, Renderable, RenderableGenerator
+from pyxbar.types import Boolable, Optional, Renderable, RenderableGenerator
 from pyxbar.utils import with_something
 
 logger = logging.getLogger()
@@ -64,22 +62,30 @@ class MenuItem:
     size: int = 0  # change the text size. eg. size=12
     shell: str = ""  # make the item run a given script terminal with your script e.g. shell=/Users/user/xbar_Plugins/scripts/nginx.restart.sh if there are spaces in the file path you will need quotes e.g. shell="/Users/user/xbar Plugins/scripts/nginx.restart.sh" (bash is also supported but is deprecated)
     params: tuple[str, ...] = ()  # = to specify arguments to the script
-    terminal: BoolNone = None  # start bash script without opening Terminal
-    refresh: BoolNone = None  # make the item refresh the plugin it belongs to. If the item runs a script, refresh is performed after the script finishes. eg. refresh=true
-    dropdown: BoolNone = None  # If false, the line will only appear and cycle in the status bar but not in the dropdown
+    terminal: Optional[bool] = None  # start bash script without opening Terminal
+    refresh: Optional[
+        bool
+    ] = None  # make the item refresh the plugin it belongs to. If the item runs a script, refresh is performed after the script finishes. eg. refresh=true
+    dropdown: Optional[
+        bool
+    ] = None  # If false, the line will only appear and cycle in the status bar but not in the dropdown
     length: int = 0  # truncate the line to the specified number of characters. A … will be added to any truncated strings, as well as a tooltip displaying the full string. eg. length=10
-    trim: BoolNone = None  # whether to trim leading/trailing whitespace from the title.  true or false (defaults to true)
-    alternate: BoolNone = None  # =true to mark a line as an alternate to the previous one for when the Option key is pressed in the dropdown
+    trim: Optional[
+        bool
+    ] = None  # whether to trim leading/trailing whitespace from the title.  true or false (defaults to true)
+    alternate: Optional[
+        bool
+    ] = None  # =true to mark a line as an alternate to the previous one for when the Option key is pressed in the dropdown
     templateImage: str = ""  # set an image for this item. The image data must be passed as base64 encoded string and should consist of only black and clear pixels. The alpha channel in the image can be used to adjust the opacity of black content, however. This is the recommended way to set an image for the statusbar. Use a 144 DPI resolution to support Retina displays. The imageformat can be any of the formats supported by Mac OS X
     image: str = ""  # set an image for this item. The image data must be passed as base64 encoded string. Use a 144 DPI resolution to support Retina displays. The imageformat can be any of the formats supported by Mac OS X
-    emojize: BoolNone = (
-        None  # =false will disable parsing of github style :mushroom: into emoji
-    )
-    ansi: BoolNone = None  # =false turns off parsing of ANSI codes.
-    disabled: BoolNone = None  # =true greyed out the line and disable click
+    emojize: Optional[
+        bool
+    ] = None  # =false will disable parsing of github style :mushroom: into emoji
+    ansi: Optional[bool] = None  # =false turns off parsing of ANSI codes.
+    disabled: Optional[bool] = None  # =true greyed out the line and disable click
 
     magic_number: ClassVar[int] = 19  # only use the 19 attrs above here
-    only_if: bool = True
+    only_if: Boolable = True
     submenu: list[Renderable] = field(default_factory=list, init=False)
     siblings: list[Renderable] = field(default_factory=list, init=False)
 
@@ -125,7 +131,7 @@ class MenuItem:
                 for k in list(MenuItem.__dataclass_fields__)[1:19]
                 if k != "shell"
             )
-            if (self._type_hint(k) == BoolNone and v is not None) or v
+            if (self._type_hint(k) == Optional[bool] and v is not None) or v
         )
 
     def all_params(self) -> Iterable[str]:

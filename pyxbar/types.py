@@ -4,9 +4,22 @@ from typing import (
     Generator,
     Optional,
     Protocol,
+    Union,
 )
 
-BoolNone = Optional[bool]
+
+class HasBool(Protocol):
+    def __bool__(self) -> bool:
+        ...
+
+
+class HasLen(Protocol):
+    def __len__(self) -> int:
+        ...
+
+
+Boolable = Union[HasBool, HasLen]
+
 
 RenderableGenerator = Generator[str, None, None]
 
