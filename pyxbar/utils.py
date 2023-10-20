@@ -56,8 +56,3 @@ def with_something(
         else:
             key.append(child)
     return ret
-
-
-def check_output(cmd: str, cwd: Union[str, Path, None] = None) -> str:
-    logger.debug(f"running: {cmd}")
-    return subprocess.check_output(cmd, shell=True, cwd=cwd, encoding="utf-8").strip()

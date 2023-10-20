@@ -350,7 +350,7 @@ class ShellItem(MenuItem):
                 disabled=True,
             )
 
-    def run(self) -> str:
+    def check_output(self) -> str:
         shell_params = list(self.shell_params(use_cwd=False))
         if self.config.DEBUG:
             self.logger.debug(f"running: {shell_params}")
