@@ -1,3 +1,16 @@
+RSS=
+guard-env-%:
+	@ if [ "${${*}}" = "" ]; then \
+		echo "Environment variable $* not set"; \
+		exit 1; \
+	else \
+		echo "Environment variable $* found"; \
+	fi
+
+
+check_version:
+	$(curl --silent https://pypi.org/rss/project/pyxbar/releases.xml | awk -F '[<>]' '/title/ { if ($$3 ~ /[0-9].[0-9].[0-9]/){print $$3 ; exit} }'
+
 clean:
 	rm -rf build dist *.egg-info
 
@@ -5,8 +18,10 @@ build: clean
 	python3 -m pip install --upgrade build
 	python3 -m build
 
-upload: export TWINE_USERNAME = __token__
+upload: guard-env-TWINE_USERNAME
+upload: guard-env-TWINE_PASSWORD
 upload: build
 	git push origin main
 	python3 -m pip install --upgrade twine
 	python3 -m twine upload dist/*
+	make clean

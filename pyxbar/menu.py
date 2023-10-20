@@ -12,9 +12,13 @@ from typing import (
     ClassVar,
     Generator,
     Iterable,
+    Literal,
     Union,
     get_type_hints,
+    overload,
 )
+
+from typing_extensions import NotRequired, TypedDict, Unpack
 
 from pyxbar.config import Config, get_config
 from pyxbar.types import Boolable, Optional, Renderable, RenderableGenerator
@@ -22,6 +26,31 @@ from pyxbar.utils import with_something
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
+
+
+class MenuItemKwargsOptional(TypedDict, total=False):
+    key: NotRequired[str]
+    href: NotRequired[str]
+    color: NotRequired[str]
+    font: NotRequired[Union[str, Literal["monospace"]]]
+    size: NotRequired[int]
+    shell: NotRequired[str]
+    params: NotRequired[tuple[str, ...]]
+    terminal: NotRequired[Optional[bool]]
+    refresh: NotRequired[Optional[bool]]
+    dropdown: NotRequired[Optional[bool]]
+    length: NotRequired[int]
+    trim: NotRequired[Optional[bool]]
+    alternate: NotRequired[Optional[bool]]
+    templateImage: NotRequired[str]
+    image: NotRequired[str]
+    emojize: NotRequired[Optional[bool]]
+    ansi: NotRequired[Optional[bool]]
+    disabled: NotRequired[Optional[bool]]
+
+
+class MenuItemKwargs(MenuItemKwargsOptional, total=False):
+    title: str
 
 
 @dataclass
@@ -52,42 +81,102 @@ class Menu:
 
 @dataclass
 class MenuItem:
+    """AI is creating summary for
+
+    Attributes:
+        title: (str):
+            the text of the menu item
+        key: (str):
+            shortcut key, use + to create combinations
+            options: (CmdOrCtrl, OptionOrAlt, shift, ctrl, super, tab, plus,
+            return, escape, f12, up, down, space)
+            e.g. key=k or key=shift+k
+        href: (str):
+            open href when clicked
+        color: (str):
+            the text color
+            e.g. common colors 'red' and hex colors '#ff0000'
+        font: (str):
+            text font (defaults to system font).
+            e.g. font=UbuntuMono-Bold
+        size: (int):
+            text size
+        shell: (str):
+            run this command when clicked
+        params: (tuple[str, ...]):
+            arguments to the script
+        terminal: (bool | None):
+            should the script run in a terminal window
+        refresh: (bool | None):
+            refresh the current menu. If the item runs a script, refresh is
+            performed after the script finishes
+        dropdown: (bool | None):
+            If false, the line will only appear and cycle in the status bar but
+            not in the dropdown
+        length: (int):
+            truncate the line to the specified number of characters. A … will be
+            added to any truncated strings, as well as a tooltip displaying the
+            full string.
+            e.g. length=10
+        trim: (bool | None):
+            should leading/trailing whitespace be trimmed from the title
+        alternate: (bool | None):
+            mark a line as an alternate to the previous one for when the Option
+            key is pressed in the dropdown
+        templateImage: (str):
+            set an image for this item. The image data must be passed as base64
+            encoded string and should consist of only black and clear pixels.
+            The alpha channel in the image can be used to adjust the opacity of
+            black content, however. This is the recommended way to set an image
+            for the statusbar. Use a 144 DPI resolution to support Retina
+            displays. The imageformat can be any of the formats supported by Mac
+            OS X
+        image: (str):
+            set an image for this item. The image data must be passed as base64
+            encoded string. Use a 144 DPI resolution to support Retina displays.
+            The imageformat can be any of the formats supported by Mac OS X
+        emojize: (bool | None):
+            should convert text into an emoji. e.g. :mushroom: into 🍄
+        ansi: (bool | None):
+            should parsing of ANSI codes.
+        disabled: (bool | None):
+            should the line be greyed out and click disabled
+
+
+    Yields:
+        [type]: [description]
+    """
+
     title: str
-    key: str = ""  # shift+k to add a key shortcut; Use + to create combinations; Example options: CmdOrCtrl, OptionOrAlt, shift, ctrl, super, tab, plus, return, escape, f12, up, down, space
-    href: str = ""  # when clicked, open the url
-    color: str = (
-        ""  # change the text color. e.g. common colors 'red' and hex colors (#ff0000)
-    )
-    font: str = ""  # change the text font. eg. font=UbuntuMono-Bold
-    size: int = 0  # change the text size. eg. size=12
-    shell: str = ""  # make the item run a given script terminal with your script e.g. shell=/Users/user/xbar_Plugins/scripts/nginx.restart.sh if there are spaces in the file path you will need quotes e.g. shell="/Users/user/xbar Plugins/scripts/nginx.restart.sh" (bash is also supported but is deprecated)
-    params: tuple[str, ...] = ()  # = to specify arguments to the script
-    terminal: Optional[bool] = None  # start bash script without opening Terminal
-    refresh: Optional[
-        bool
-    ] = None  # make the item refresh the plugin it belongs to. If the item runs a script, refresh is performed after the script finishes. eg. refresh=true
-    dropdown: Optional[
-        bool
-    ] = None  # If false, the line will only appear and cycle in the status bar but not in the dropdown
-    length: int = 0  # truncate the line to the specified number of characters. A … will be added to any truncated strings, as well as a tooltip displaying the full string. eg. length=10
-    trim: Optional[
-        bool
-    ] = None  # whether to trim leading/trailing whitespace from the title.  true or false (defaults to true)
-    alternate: Optional[
-        bool
-    ] = None  # =true to mark a line as an alternate to the previous one for when the Option key is pressed in the dropdown
-    templateImage: str = ""  # set an image for this item. The image data must be passed as base64 encoded string and should consist of only black and clear pixels. The alpha channel in the image can be used to adjust the opacity of black content, however. This is the recommended way to set an image for the statusbar. Use a 144 DPI resolution to support Retina displays. The imageformat can be any of the formats supported by Mac OS X
-    image: str = ""  # set an image for this item. The image data must be passed as base64 encoded string. Use a 144 DPI resolution to support Retina displays. The imageformat can be any of the formats supported by Mac OS X
-    emojize: Optional[
-        bool
-    ] = None  # =false will disable parsing of github style :mushroom: into emoji
-    ansi: Optional[bool] = None  # =false turns off parsing of ANSI codes.
-    disabled: Optional[bool] = None  # =true greyed out the line and disable click
+    key: str = ""
+    href: str = ""
+    color: str = ""
+    font: Union[str, Literal["monospace"]] = ""
+    size: int = 0
+    shell: str = ""
+    params: tuple[str, ...] = ()
+    terminal: Optional[bool] = None
+    refresh: Optional[bool] = None
+    dropdown: Optional[bool] = None
+    length: int = 0
+    trim: Optional[bool] = None
+    alternate: Optional[bool] = None
+    templateImage: str = ""
+    image: str = ""
+    emojize: Optional[bool] = None
+    ansi: Optional[bool] = None
+    disabled: Optional[bool] = None
 
     magic_number: ClassVar[int] = 19  # only use the 19 attrs above here
+    title_alternate: Optional[str] = None  # alternate title for Option key
+    monospace: Optional[bool] = False  # shortcut to set font to monospace
     only_if: Boolable = True
-    submenu: list[Renderable] = field(default_factory=list, init=False)
-    siblings: list[Renderable] = field(default_factory=list, init=False)
+    submenu: list[Renderable] | Iterable[Renderable] = field(
+        default_factory=list, init=False
+    )
+    siblings: list[Renderable] | Iterable[Renderable] = field(
+        default_factory=list, init=False
+    )
 
     @classmethod
     def _type_hint(cls, key: str, hints: dict[type, dict[str, type]] = {}):
@@ -95,6 +184,13 @@ class MenuItem:
             hints[cls] = get_type_hints(cls, globals())
 
         return hints[cls][key]
+
+    def __post_init__(self):
+        if self.submenu:
+            self.submenu = list(self.submenu)
+
+        if self.siblings:
+            self.siblings = list(self.siblings)
 
     @property
     def is_divider(self) -> bool:
@@ -111,8 +207,8 @@ class MenuItem:
     def depth_prefix(self, depth: int = 0) -> str:
         return f"{'--' * depth}{' ' if depth and not self.is_divider else ''}"
 
-    def _title(self, depth: int = 0) -> str:
-        return f"{self.depth_prefix(depth)}{self.title}"
+    def _title(self, depth: int = 0, alternate: bool = False) -> str:
+        return f"{self.depth_prefix(depth)}{self.title if not alternate else self.title_alternate}"
 
     def subclass_render_hook(self) -> Generator[Renderable, None, None]:
         yield from ()
@@ -124,6 +220,9 @@ class MenuItem:
         return (shell, *params, *self.params)
 
     def menu_params(self) -> Iterable[tuple[str, Any]]:
+        if self.font == "monospace" or self.monospace:
+            self.font = self.config.MONO_FONT
+
         return (
             (k, v)
             for k, v in (
@@ -146,6 +245,9 @@ class MenuItem:
         if self.only_if:
             yield " | ".join((self._title(depth), *self.all_params()))
 
+            if self.title_alternate:
+                yield " | ".join((self._title(depth, True), *self.all_params()))
+
             for item in self.subclass_render_hook():
                 yield from item.render(depth)
 
@@ -160,6 +262,43 @@ class MenuItem:
 
     def with_siblings(self, *children: Renderable | Iterable[Renderable]) -> MenuItem:
         return with_something(self, self.siblings, *children)
+
+    @overload
+    def with_alternate(
+        self, title_or_item: str, **kwargs: Unpack[MenuItemKwargsOptional]
+    ) -> MenuItem:
+        ...
+
+    @overload
+    def with_alternate(
+        self, title_or_item: None = ..., **kwargs: Unpack[MenuItemKwargs]
+    ) -> MenuItem:
+        ...
+
+    @overload
+    def with_alternate(self, title_or_item: MenuItemKwargs) -> MenuItem:
+        ...
+
+    @overload
+    def with_alternate(self, title_or_item: MenuItem) -> MenuItem:
+        ...
+
+    def with_alternate(
+        self,
+        title_or_item: Union[str, MenuItemKwargs, MenuItem, None] = None,
+        title: Optional[str] = None,
+        **kwargs: Unpack[MenuItemKwargsOptional],
+    ) -> MenuItem:
+        if title_or_item is None and title:
+            title_or_item = MenuItemKwargs(title=title, **kwargs)
+        if isinstance(title_or_item, str):
+            title_or_item = MenuItemKwargs(title=title_or_item, **kwargs)
+        if isinstance(title_or_item, dict):
+            title_or_item = MenuItem(**title_or_item)
+        if isinstance(title_or_item, MenuItem):
+            title_or_item.alternate = True
+            return self.with_siblings(title_or_item)
+        raise NotImplementedError()
 
 
 @dataclass
@@ -179,7 +318,8 @@ class ShellItem(MenuItem):
         **kwargs: Any,
     ):
         super().__init__(title=title, shell=shell, **kwargs)
-        self.cwd = cwd
+        if cwd is not None:
+            self.cwd = cwd
 
     def __post_init__(self):
         if isinstance(self.cwd, str):
@@ -216,3 +356,13 @@ class ShellItem(MenuItem):
             self.logger.debug(f"running: {shell_params}")
         output = subprocess.check_output(shell_params, cwd=self.cwd)
         return output.decode("utf-8").strip()
+
+
+class MenuItemable(Renderable):
+    """subclass this in a dataclass to make something that will become a menu item!"""
+
+    def menu_item(self) -> MenuItem:
+        raise NotImplementedError("subclass must implement this ")
+
+    def render(self, depth: int = 0) -> MenuItem:
+        yield from self.menu_item().render(depth=depth)

@@ -4,6 +4,7 @@ Include this in your file after the regular imports
 
 ```py
 def install(pkg: str, spec: str = ""):
+    """function to allow the installation of packages"""
     sys.path += [] if (sp := f"{Path(__file__)}.site-packages") in sys.path else [sp]
     try:
         __import__(pkg)
@@ -13,10 +14,11 @@ def install(pkg: str, spec: str = ""):
         __import__(pkg)
 
 
+# install the PyXbar library from pypi
 install("pyxbar")
 
-
-from pyxbar import (  # noqa: E402
+# use it!
+from pyxbar import (
     Config,
     Divider,
     Menu,
@@ -31,7 +33,7 @@ class MyConfig(Config):
     ...
 
 CONFIG = get_config(MyConfig)  # type: ignore
-)
+
 
 
 
