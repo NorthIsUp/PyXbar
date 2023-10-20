@@ -224,7 +224,7 @@ class MenuItem:
             for k, v in (
                 (k, getattr(self, k))
                 for k in list(MenuItem.__dataclass_fields__)[1:19]
-                if k != "shell"
+                if k not in ("shell", "params")
             )
             if (self._type_hint(k) == Optional[bool] and v is not None) or v
         )
