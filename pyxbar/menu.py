@@ -171,12 +171,8 @@ class MenuItem:
     title_alternate: Optional[str] = None  # alternate title for Option key
     monospace: Optional[bool] = False  # shortcut to set font to monospace
     only_if: Boolable = True
-    submenu: list[Renderable] | Iterable[Renderable] = field(
-        default_factory=list, init=False
-    )
-    siblings: list[Renderable] | Iterable[Renderable] = field(
-        default_factory=list, init=False
-    )
+    submenu: list[Renderable] = field(default_factory=list, init=False)
+    siblings: list[Renderable] = field(default_factory=list, init=False)
 
     @classmethod
     def _type_hint(cls, key: str, hints: dict[type, dict[str, type]] = {}):
