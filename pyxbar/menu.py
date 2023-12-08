@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import logging
 import shlex
-import subprocess
 from dataclasses import dataclass, field
-from os.path import expanduser
-from pathlib import Path
+from itertools import chain
+from pathlib import Path  # noqa
 from shlex import quote
 from typing import (
     Any,
@@ -13,6 +12,7 @@ from typing import (
     Generator,
     Iterable,
     Literal,
+    Optional,
     Union,
     get_type_hints,
     overload,
@@ -20,9 +20,9 @@ from typing import (
 
 from typing_extensions import NotRequired, TypedDict, Unpack
 
-from pyxbar.config import Config, get_config
-from pyxbar.types import Boolable, Optional, Renderable, RenderableGenerator
-from pyxbar.utils import with_something
+from .config import Config, get_config
+from .types import Boolable, Renderable, RenderableGenerator
+from .utils import with_something
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
@@ -54,22 +54,23 @@ class MenuItemKwargs(MenuItemKwargsOptional, total=False):
 
 
 @dataclass
-class Menu:
+class Menu(Renderable):
     title: str
     items: list[Renderable] = field(default_factory=list, init=False)
 
-    def render(self) -> Any:
-        return "\n".join(
-            (
-                self.title,
-                "---",
-                *self._items(),
-                *get_config().render(),  # type: ignore
-            )
+    def render(self, depth: int = 0) -> RenderableGenerator:
+        yield self.title
+        yield "---"
+        yield from chain(
+            self._items(),
+            get_config().render(),  # type: ignore
         )
 
+    def format(self) -> str:
+        return "\n".join(self.render())
+
     def print(self) -> None:
-        print(self.render())
+        print(self.format())
 
     def _items(self) -> RenderableGenerator:
         for item in self.items:
@@ -80,7 +81,7 @@ class Menu:
 
 
 @dataclass
-class MenuItem:
+class MenuItem(Renderable):
     """AI is creating summary for
 
     Attributes:
@@ -295,70 +296,3 @@ class MenuItem:
             title_or_item.alternate = True
             return self.with_siblings(title_or_item)
         raise NotImplementedError()
-
-
-@dataclass
-class Divider(MenuItem):
-    title: str = "---"
-
-
-@dataclass
-class ShellItem(MenuItem):
-    cwd: Union[str, Path, None] = None
-
-    def __init__(
-        self,
-        title: str,
-        shell: str,
-        cwd: Union[str, Path, None] = None,
-        **kwargs: Any,
-    ):
-        super().__init__(title=title, shell=shell, **kwargs)
-        if cwd is not None:
-            self.cwd = cwd
-
-    def __post_init__(self):
-        if isinstance(self.cwd, str):
-            self.cwd = Path(self.cwd)
-
-        if self.cwd and not self.cwd.exists():
-            self.config.error(f"❌ cwd does not exist at {self.cwd}")
-
-        if self.shell and not self.params:
-            self.shell, *self.params = (quote(_) for _ in shlex.split(self.shell))
-
-    def shell_params(self, use_cwd: bool = True) -> Iterable[str]:
-        shell_params = super().shell_params()
-
-        if use_cwd and self.cwd:
-            shell_params = ("cd", expanduser(self.cwd), "&&", *shell_params)
-
-        return shell_params
-
-    def shell_str(self, use_cwd: bool = False) -> str:
-        return " ".join(self.shell_params(use_cwd=use_cwd))
-
-    def subclass_render_hook(self, depth: int = 0) -> Generator[Renderable, None, None]:
-        if self.config.DEBUG:
-            yield MenuItem(
-                title=f"╰─ {self.shell_str(use_cwd=False)}",
-                font=get_config().MONO_FONT,
-                disabled=True,
-            )
-
-    def check_output(self) -> str:
-        shell_params = list(self.shell_params(use_cwd=False))
-        if self.config.DEBUG:
-            self.logger.debug(f"running: {shell_params}")
-        output = subprocess.check_output(shell_params, cwd=self.cwd)
-        return output.decode("utf-8").strip()
-
-
-class MenuItemable(Renderable):
-    """subclass this in a dataclass to make something that will become a menu item!"""
-
-    def menu_item(self) -> MenuItem:
-        raise NotImplementedError("subclass must implement this ")
-
-    def render(self, depth: int = 0) -> MenuItem:
-        yield from self.menu_item().render(depth=depth)

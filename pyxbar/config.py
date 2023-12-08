@@ -2,24 +2,26 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from dataclasses import asdict, dataclass, field
 from inspect import getfile
 from pathlib import Path
 from typing import (
     Type,
     TypeVar,
+    Union,
     cast,
     get_type_hints,
 )
 
-from pyxbar.types import RenderableGenerator
+from pyxbar.types import Renderable, RenderableGenerator
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
 
 
 @dataclass
-class Config:
+class Config(Renderable):
     DEBUG: bool = False
     MONO_FONT: str = "Andale Mono"
 
@@ -66,9 +68,10 @@ class Config:
                     yield from MenuItem(f"{depth_prefix} {preifx} {msg}").render(depth)
 
         if self.DEBUG:
-            MenuItem("Vars").with_submenu(
+            yield from MenuItem(f"🐍 {sys.version}").render()
+            yield from MenuItem("Vars").with_submenu(
                 MenuItem(f"{k}: {getattr(self, k)}") for k in self.__dataclass_fields__
-            ).render(depth + 1)
+            ).render(depth)
             # yield Cmd(f"📝 Edit Vars", f"open '{__file__}.vars.json'", depth=2)
 
     def error(self, msg: str):
@@ -86,7 +89,7 @@ CONFIG_CLS: Type[Config]
 CONFIG: Config
 
 
-def get_config(config_cls: Type[ConfigT] | None = None) -> ConfigT:
+def get_config(config_cls: Type[ConfigT] = Config) -> ConfigT:
     global CONFIG_CLS, CONFIG
 
     if config_cls is globals().get("CONFIG_CLS") is None:
@@ -95,7 +98,7 @@ def get_config(config_cls: Type[ConfigT] | None = None) -> ConfigT:
     if config_cls:
         CONFIG_CLS = config_cls  # type: ignore
 
-    if globals().get("CONFIG"):
+    if CONFIG:
         return CONFIG_CLS(**asdict(CONFIG))  # type: ignore
 
     return cast(ConfigT, CONFIG_CLS())

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import (
     Generator,
-    Optional,
     Protocol,
     Union,
 )
@@ -18,12 +17,13 @@ class HasLen(Protocol):
         ...
 
 
-Boolable = Union[HasBool, HasLen]
+class Renderable(Protocol):
+    def render(self, depth: int = 0) -> RenderableGenerator:
+        ...
 
 
 RenderableGenerator = Generator[str, None, None]
 
+Boolable = Union[HasBool, HasLen]
 
-class Renderable(Protocol):
-    def render(self, depth: int = 0) -> RenderableGenerator:
-        ...
+Numeric = Union[int, float]

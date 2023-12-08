@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-import subprocess
-from pathlib import Path
+import re
 from typing import (
     Any,
     Generator,
@@ -11,7 +10,7 @@ from typing import (
     Union,
 )
 
-from pyxbar.types import Renderable
+from .types import Numeric, Renderable
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
@@ -20,8 +19,8 @@ T = TypeVar("T")
 
 
 def get_in(
-    keys: str | list[str],
-    coll: dict[str | int, Any] | list[Any],
+    keys: Union[str, list[str]],
+    coll: Union[dict[Union[str, int], Any], list[Any]],
     default: object = (_no_default := object()),
 ) -> Generator[Any, None, None]:
     try:
@@ -45,10 +44,18 @@ def strify(joiner: str, *args: Any) -> str:
     return joiner.join(str(arg) for arg in args if arg is not None)
 
 
+def camel_to_snake(
+    s: str, _cache: dict[str, Any] = {"ID": "id", "_re": re.compile(r"(?<!^)(?=[A-Z])")}
+) -> str:
+    if s in _cache:
+        return _cache[s]
+    return _cache.setdefault(s, _cache["_re"].sub("_", s).lower())
+
+
 def with_something(
     ret: T,
     key: list[Renderable],
-    *children: Renderable | Iterable[Renderable],
+    *children: Union[Renderable, Iterable[Renderable]],
 ) -> T:
     for child in children:
         if isinstance(child, Iterable):
@@ -56,3 +63,31 @@ def with_something(
         else:
             key.append(child)
     return ret
+
+
+def threshold_icons(level: Numeric, *icons: tuple[str, int], default: str = "") -> str:
+    """return icons based on where a number falls in a list"""
+    icon = default
+    for icon, limit in icons:
+        if level >= limit:
+            return icon
+    else:
+        return default or icon
+
+
+def threshold_traffic_icons(
+    level: Numeric,
+    blue: int,
+    green: int,
+    yellow: int,
+    red: int,
+    zero: str = "",
+):
+    return threshold_icons(
+        level,
+        ("🔵", blue),
+        ("🟢", green),
+        ("🟡", yellow),
+        ("🔴", red),
+        default=zero,
+    )

@@ -15,5 +15,8 @@ readme = { file = ["README.md"], content-type = "text/markdown" }
 version = { attr = "pyxbar.__version__" }
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.7"
 enable_incomplete_feature = ["Unpack"]
+
+[tool.black]
+target_version = ['py37']
