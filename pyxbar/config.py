@@ -98,7 +98,7 @@ def get_config(config_cls: Type[ConfigT] = Config) -> ConfigT:
     if config_cls:
         CONFIG_CLS = config_cls  # type: ignore
 
-    if CONFIG:
+    if globals().get('CONFIG'):
         return CONFIG_CLS(**asdict(CONFIG))  # type: ignore
 
     return cast(ConfigT, CONFIG_CLS())
