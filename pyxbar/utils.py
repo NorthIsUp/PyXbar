@@ -102,7 +102,7 @@ def cache_path(__file__: str, name: str, ensure: Union[Callable, None] = None) -
         / "pyxbar"
         / Path(__file__).name
         / name
-    )
+    ).expanduser()
 
     if ensure:
         path.parent.mkdir(exist_ok=True, parents=True)
