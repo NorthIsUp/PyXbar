@@ -1,4 +1,5 @@
 from __future__ import annotations
+from genericpath import exists
 
 import logging
 import os
@@ -6,6 +7,7 @@ from pathlib import Path
 import re
 from typing import (
     Any,
+    Callable,
     Generator,
     Iterable,
     TypeVar,
@@ -94,11 +96,22 @@ def threshold_traffic_icons(
         default=zero,
     )
 
-
-def cache_dir(__file__: str, name: str) -> Path:
-    return (
+def cache_path(__file__: str, name: str, ensure: Union[Callable, None] = None) -> Path:
+    path = (
         Path(os.environ.get("XDG_CACHE_HOME", "~/.cache"))
         / "pyxbar"
         / Path(__file__).name
         / name
     )
+
+    if ensure:
+        path.parent.mkdir(exist_ok=True, parents=True)
+        ensure(path, exist_ok=True)
+
+    return path
+    
+def cache_file(__file__: str, name: str, touch: bool = False) -> Path:
+    return cache_path(__file__, name, Path.touch if touch else None)
+
+def cache_dir(__file__: str, name: str, mkdir: bool = False) -> Path:
+    return cache_path(__file__, name, Path.mkdir if mkdir else None)
