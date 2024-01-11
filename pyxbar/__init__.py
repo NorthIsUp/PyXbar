@@ -13,7 +13,9 @@ from .types import RenderableGenerator as RenderableGenerator
 from .utils import camel_to_snake as camel_to_snake
 from .utils import get_in as get_in
 from .utils import strify as strify
+from .utils import cache_file as cache_file
+from .utils import cache_dir as cache_dir
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 __all__ = ("__version__",)
