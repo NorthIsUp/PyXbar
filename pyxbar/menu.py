@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import shlex
 from dataclasses import dataclass, field
+from email.mime import image
 from itertools import chain
 from pathlib import Path  # noqa
 from shlex import quote
@@ -13,6 +14,8 @@ from typing import (
     Iterable,
     Literal,
     Optional,
+    Self,
+    Sequence,
     Union,
     get_type_hints,
     overload,
@@ -51,33 +54,6 @@ class MenuItemKwargsOptional(TypedDict, total=False):
 
 class MenuItemKwargs(MenuItemKwargsOptional, total=False):
     title: str
-
-
-@dataclass
-class Menu(Renderable):
-    title: str
-    items: list[Renderable] = field(default_factory=list, init=False)
-
-    def render(self, depth: int = 0) -> RenderableGenerator:
-        yield self.title
-        yield "---"
-        yield from chain(
-            self._items(),
-            get_config().render(),  # type: ignore
-        )
-
-    def format(self) -> str:
-        return "\n".join(self.render())
-
-    def print(self) -> None:
-        print(self.format())
-
-    def _items(self) -> RenderableGenerator:
-        for item in self.items:
-            yield from item.render(depth=0)
-
-    def with_items(self, *items: Renderable | Iterable[Renderable]) -> Menu:
-        return with_something(self, self.items, *[_ for _ in items if _])
 
 
 @dataclass
@@ -182,13 +158,6 @@ class MenuItem(Renderable):
 
         return hints[cls][key]
 
-    def __post_init__(self):
-        if self.submenu:
-            self.submenu = list(self.submenu)
-
-        if self.siblings:
-            self.siblings = list(self.siblings)
-
     @property
     def is_divider(self) -> bool:
         return self.title == "---"
@@ -254,30 +223,30 @@ class MenuItem(Renderable):
             for item in self.siblings:
                 yield from item.render(depth)
 
-    def with_submenu(self, *children: Renderable | Iterable[Renderable]) -> MenuItem:
+    def with_submenu(self, *children: Renderable | Iterable[Renderable]) -> Self:
         return with_something(self, self.submenu, *children)
 
-    def with_siblings(self, *children: Renderable | Iterable[Renderable]) -> MenuItem:
+    def with_siblings(self, *children: Renderable | Iterable[Renderable]) -> Self:
         return with_something(self, self.siblings, *children)
 
     @overload
     def with_alternate(
         self, title_or_item: str, **kwargs: Unpack[MenuItemKwargsOptional]
-    ) -> MenuItem:
+    ) -> Self:
         ...
 
     @overload
     def with_alternate(
         self, title_or_item: None = ..., **kwargs: Unpack[MenuItemKwargs]
-    ) -> MenuItem:
+    ) -> Self:
         ...
 
     @overload
-    def with_alternate(self, title_or_item: MenuItemKwargs) -> MenuItem:
+    def with_alternate(self, title_or_item: MenuItemKwargs) -> Self:
         ...
 
     @overload
-    def with_alternate(self, title_or_item: MenuItem) -> MenuItem:
+    def with_alternate(self, title_or_item: MenuItem) -> Self:
         ...
 
     def with_alternate(
@@ -285,7 +254,7 @@ class MenuItem(Renderable):
         title_or_item: Union[str, MenuItemKwargs, MenuItem, None] = None,
         title: Optional[str] = None,
         **kwargs: Unpack[MenuItemKwargsOptional],
-    ) -> MenuItem:
+    ) -> Self:
         if title_or_item is None and title:
             title_or_item = MenuItemKwargs(title=title, **kwargs)
         if isinstance(title_or_item, str):
@@ -296,3 +265,17 @@ class MenuItem(Renderable):
             title_or_item.alternate = True
             return self.with_siblings(title_or_item)
         raise NotImplementedError()
+
+
+@dataclass
+class Menu(MenuItem):
+    def __post_init__(self):
+        self.siblings.insert(0, MenuItem("---"))
+
+    def format(self) -> str:
+        return "\n".join(self.render())
+
+    def print(self) -> None:
+        print(self.format())
+
+    with_items = MenuItem.with_siblings

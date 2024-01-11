@@ -11,7 +11,7 @@ def install(pkg: str, spec: str = ""):
     except ImportError:
         install_args = ["install", "--upgrade", f"--target={sp}"]
         getattr(__import__("pip"), "main")(install_args + [spec or pkg])
-        __import__(pkg)
+        __import__("importlib").invalidate_caches()
 
 
 # install the PyXbar library from pypi
