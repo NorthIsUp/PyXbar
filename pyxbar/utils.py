@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 import re
 from typing import (
     Any,
@@ -90,4 +92,13 @@ def threshold_traffic_icons(
         ("🟡", yellow),
         ("🔴", red),
         default=zero,
+    )
+
+
+def cache_dir(__file__: str, name: str) -> Path:
+    return (
+        Path(os.environ.get("XDG_CACHE_HOME", "~/.cache"))
+        / "pyxbar"
+        / Path(__file__).name
+        / name
     )

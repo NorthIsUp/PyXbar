@@ -3,15 +3,20 @@ Python library to make xbar development easy in python
 Include this in your file after the regular imports
 
 ```py
-def install(pkg: str, spec: str = ""):
-    """function to allow the installation of packages"""
-    sys.path += [] if (sp := f"{Path(__file__)}.site-packages") in sys.path else [sp]
+import os, sys
+from pathlib import Path
+
+def install(pkg: str, spec: str = "", cache_dir: Path | str = "~/.cache"):
+    name, cache = Path(__file__), Path(os.environ.get("XDG_CACHE_HOME", cache_dir))
+    sitep = (cache / f"pyxbar/{name.name}/site-packages").as_posix()
+    sys.path += [] if sitep in sys.path else [sitep]
     try:
         __import__(pkg)
     except ImportError:
-        install_args = ["install", "--upgrade", f"--target={sp}"]
-        getattr(__import__("pip"), "main")(install_args + [spec or pkg])
+        install_args = ["install", "--upgrade", f"--target={sitep}", spec or pkg]
+        getattr(__import__("pip"), "main")(install_args)
         __import__("importlib").invalidate_caches()
+
 
 
 # install the PyXbar library from pypi
