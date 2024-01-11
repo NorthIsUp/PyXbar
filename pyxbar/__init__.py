@@ -16,6 +16,6 @@ from .utils import strify as strify
 from .utils import cache_file as cache_file
 from .utils import cache_dir as cache_dir
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 
 __all__ = ("__version__",)
