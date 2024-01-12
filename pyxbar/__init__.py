@@ -3,6 +3,10 @@ from .config import get_config as get_config
 from .menu import Menu as Menu
 from .menu import MenuItem as MenuItem
 from .menu import Renderable as Renderable
+from .menu_image import IcnsImage as IcnsImage
+from .menu_image import Image as Image
+from .menu_image import ServiceImage as ServiceImage
+from .menu_image import UrlImage as UrlImage
 from .menu_items import DataclassItem as DataclassItem
 from .menu_items import Divider as Divider
 from .menu_items import JsonItem as JsonItem
@@ -16,6 +20,6 @@ from .utils import camel_to_snake as camel_to_snake
 from .utils import get_in as get_in
 from .utils import strify as strify
 
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 
 __all__ = ("__version__",)
