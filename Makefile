@@ -25,14 +25,17 @@ build: clean
 	python3 -m pip install --upgrade build
 	python3 -m build
 
-upload: guard-env-TWINE_USERNAME
-upload: guard-env-TWINE_PASSWORD
-upload: build
+tag: pypi
 	git stash
-	git commit -main -m "Bump version to $(shell make local_version)"
-	git push origin main
+	git tag -a $(shell make local_version) -m "Bump version to $(shell make local_version)"
+	git push origin main --tags
+	git stash pop
+
+pypi: guard-env-TWINE_USERNAME
+pypi: guard-env-TWINE_PASSWORD
+pypi: build
 	python3 -m pip install --upgrade twine
 	python3 -m twine upload dist/*
-	git stash pop
 	make clean
 
+upload: pypi
