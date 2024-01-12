@@ -26,21 +26,20 @@ clean:
 	rm -rf build dist *.egg-info
 
 bump:
+	$(eval LOCAL_BEFORE=$(shell make local_version))
 	$(eval CURRENT_VERSION=$(shell make pypi_version))
 	$(eval NEXT_VERSION=$(shell \
 		echo "${CURRENT_VERSION}" \
 		| awk -F. '/[0-9]+\./{$$NF++;print}' OFS=. \
 	))
-	$(shell set -x && \
-		sed -i 's/^__version__ = ".*"$$/__version__ = \"hh\"/' \
-	)
-	$(eval $(shell \
+	$(shell \
 		sed -i 's/^__version__ = ".*"$$/__version__ = "${NEXT_VERSION}"/' \
 		${VERSION_FILE} \
-	))
-	$(eval LOCAL_VERSION=$(shell make local_version))
-
-	if [ ${LOCAL_VERSION} = ${NEXT_VERSION} ] ; then \
+	)
+	$(eval LOCAL_AFTER=$(shell make local_version))
+	if [ ${LOCAL_BEFORE} = ${LOCAL_AFTER} ] ; then \
+		echo "====> no bump needed" ; \
+	elif [ ${LOCAL_AFTER} = ${NEXT_VERSION} ] ; then \
 		echo "====> bumping from published version: ${CURRENT_VERSION} -> to ${NEXT_VERSION}" ; \
 		git add ${VERSION_FILE} \
 		&& git commit -m "Publish v${NEXT_VERSION}" \
@@ -50,8 +49,6 @@ bump:
 		echo "====> error in bumping" ; \
 		exit 1 ; \
 	fi
-
-
 
 build: clean
 	python3 -m pip install --upgrade build
