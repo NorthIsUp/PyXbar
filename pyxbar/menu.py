@@ -3,9 +3,6 @@ from __future__ import annotations
 import logging
 import shlex
 from dataclasses import dataclass, field
-from email.mime import image
-from itertools import chain
-from pathlib import Path  # noqa
 from shlex import quote
 from typing import (
     Any,
@@ -15,7 +12,6 @@ from typing import (
     Literal,
     Optional,
     Self,
-    Sequence,
     Union,
     get_type_hints,
     overload,
@@ -45,7 +41,6 @@ class MenuItemKwargsOptional(TypedDict, total=False):
     length: NotRequired[int]
     trim: NotRequired[Optional[bool]]
     alternate: NotRequired[Optional[bool]]
-    templateImage: NotRequired[str]
     image: NotRequired[str]
     emojize: NotRequired[Optional[bool]]
     ansi: NotRequired[Optional[bool]]

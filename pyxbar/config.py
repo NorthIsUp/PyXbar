@@ -9,12 +9,12 @@ from pathlib import Path
 from typing import (
     Type,
     TypeVar,
-    Union,
     cast,
     get_type_hints,
 )
 
 from pyxbar.types import Renderable, RenderableGenerator
+from pyxbar.utils import cache_dir
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
@@ -24,6 +24,7 @@ logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
 class Config(Renderable):
     DEBUG: bool = False
     MONO_FONT: str = "Andale Mono"
+    CACHE_DIR: Path = cache_dir()
 
     _errors: list[str] = field(default_factory=list)
     _warnings: list[str] = field(default_factory=list)
@@ -98,7 +99,7 @@ def get_config(config_cls: Type[ConfigT] = Config) -> ConfigT:
     if config_cls:
         CONFIG_CLS = config_cls  # type: ignore
 
-    if globals().get('CONFIG'):
+    if globals().get("CONFIG"):
         return CONFIG_CLS(**asdict(CONFIG))  # type: ignore
 
     return cast(ConfigT, CONFIG_CLS())

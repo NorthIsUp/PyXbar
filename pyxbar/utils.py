@@ -3,16 +3,20 @@ from __future__ import annotations
 import logging
 import os
 import re
+from functools import wraps
 from pathlib import Path
 from typing import (
     Any,
     Callable,
     Generator,
     Iterable,
-    Protocol,
     TypeVar,
     Union,
 )
+
+import requests
+
+import __main__
 
 from .types import Numeric, Renderable
 
@@ -98,14 +102,14 @@ def threshold_traffic_icons(
 
 
 def cache_path(
-    __file__: str,
     name: str,
+    script: str = __main__.__file__,
     ensure: Union[Callable[[Path, bool], None], None] = None,
 ) -> Path:
     path = (
         Path(os.environ.get("XDG_CACHE_HOME", "~/.cache"))
         / "pyxbar"
-        / Path(__file__).name
+        / Path(script).name
         / name
     ).expanduser()
 
@@ -116,9 +120,24 @@ def cache_path(
     return path
 
 
-def cache_file(__file__: str, name: str, touch: bool = False) -> Path:
-    return cache_path(__file__, name, Path.touch if touch else None)
+def cache_file(
+    name: str,
+    script: str = __main__.__file__,
+    touch: bool = False,
+) -> Path:
+    return cache_path(name, script, Path.touch if touch else None)
 
 
-def cache_dir(__file__: str, name: str = "", mkdir: bool = False) -> Path:
-    return cache_path(__file__, name, Path.mkdir if mkdir else None)
+def cache_dir(
+    name: str = "",
+    script: str = __main__.__file__,
+    mkdir: bool = False,
+) -> Path:
+    return cache_path(name, script, Path.mkdir if mkdir else None)
+
+
+@wraps(requests.get)
+def get_and_cache(name: str, url: str, **kwargs: Any) -> requests.Response:
+    response = requests.get("get", url, **kwargs)
+    cache_file(name).write_bytes(response.content)
+    return response
