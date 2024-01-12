@@ -20,7 +20,6 @@ class Icon:
 
     @property
     def png(self) -> Path:
-        print(self.cache_dir, self.cache_dir.exists())
         if not (f := self.cache_dir / f"{self.name}.png").exists():
             self.fetch(f)
         return f
