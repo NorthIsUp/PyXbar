@@ -120,5 +120,5 @@ def cache_file(__file__: str, name: str, touch: bool = False) -> Path:
     return cache_path(__file__, name, Path.touch if touch else None)
 
 
-def cache_dir(__file__: str, name: str, mkdir: bool = False) -> Path:
+def cache_dir(__file__: str, name: str = "", mkdir: bool = False) -> Path:
     return cache_path(__file__, name, Path.mkdir if mkdir else None)
