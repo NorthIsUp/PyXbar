@@ -20,6 +20,6 @@ from .utils import camel_to_snake as camel_to_snake
 from .utils import get_in as get_in
 from .utils import strify as strify
 
-__version__ = "0.3.10"
+__version__ = "0.3.11"
 
 __all__ = ("__version__",)
