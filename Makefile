@@ -1,7 +1,7 @@
 RSS=https://pypi.org/rss/project/pyxbar/releases.xml
 VERSION_FILE=pyxbar/__init__.py
 
-.PHONY: clean check_version local_version
+.PHONY: clean pypi_version local_version
 
 guard-env-%:
 	@ if [ "${${*}}" = "" ]; then \
@@ -12,7 +12,7 @@ guard-env-%:
 	fi
 
 
-check_version:
+pypi_version:
 	@echo $(shell /usr/bin/curl --silent ${RSS} \
 		| awk -F '[<>]' '/title/ { if ($$3 ~ /[0-9].[0-9].[0-9]/){print $$3 ; exit} }' \
 	)
@@ -27,7 +27,7 @@ clean:
 
 bump:
 	git stash
-	$(eval CURRENT_VERSION=$(shell make check_version))
+	$(eval CURRENT_VERSION=$(shell make pypi_version))
 	$(eval NEXT_VERSION=$(shell \
 		echo "${CURRENT_VERSION}" \
 		| awk -F. '/[0-9]+\./{$$NF++;print}' OFS=. \
@@ -63,3 +63,4 @@ pypi: build
 
 publish: bump
 publish: pypi
+publish: pypi_version
