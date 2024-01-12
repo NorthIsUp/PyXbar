@@ -3,10 +3,10 @@ from .config import get_config as get_config
 from .menu import Menu as Menu
 from .menu import MenuItem as MenuItem
 from .menu import Renderable as Renderable
-from .menu_image import IcnsImage as IcnsImage
-from .menu_image import Image as Image
-from .menu_image import ServiceImage as ServiceImage
-from .menu_image import UrlImage as UrlImage
+from .menu_icons import IcnsIcon as IcnsIcon
+from .menu_icons import Icon as Icon
+from .menu_icons import ServiceIcon as ServiceIcon
+from .menu_icons import UrlIcon as UrlIcon
 from .menu_items import DataclassItem as DataclassItem
 from .menu_items import Divider as Divider
 from .menu_items import JsonItem as JsonItem
