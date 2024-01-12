@@ -26,27 +26,30 @@ clean:
 	rm -rf build dist *.egg-info
 
 bump:
-	git stash
 	$(eval CURRENT_VERSION=$(shell make pypi_version))
 	$(eval NEXT_VERSION=$(shell \
 		echo "${CURRENT_VERSION}" \
 		| awk -F. '/[0-9]+\./{$$NF++;print}' OFS=. \
 	))
+	$(shell set -x && \
+		sed -i 's/^__version__ = ".*"$$/__version__ = \"hh\"/' \
+	)
 	$(eval $(shell \
-		sed -i "s/^__version__\s*=\s*\".*\"$$/__version__ = \"${NEXT_VERSION}\"/" \
+		sed -i 's/^__version__ = ".*"$$/__version__ = "${NEXT_VERSION}"/' \
 		${VERSION_FILE} \
 	))
 	$(eval LOCAL_VERSION=$(shell make local_version))
 
 	if [ ${LOCAL_VERSION} = ${NEXT_VERSION} ] ; then \
-		echo "bumping from published version: ${CURRENT_VERSION} -> to ${NEXT_VERSION}" ; \
-		git commit -m "Publish v${NEXT_VERSION}" ; \
-		git tag -a v${NEXT_VERSION} -m "Publish v${NEXT_VERSION}" ; \
-		git push origin v${NEXT_VERSION} ; \
+		echo "====> bumping from published version: ${CURRENT_VERSION} -> to ${NEXT_VERSION}" ; \
+		git add ${VERSION_FILE} \
+		&& git commit -m "Publish v${NEXT_VERSION}" \
+		&& git tag -a v${NEXT_VERSION} -m "Publish v${NEXT_VERSION}" \
+		&& git push origin v${NEXT_VERSION} ; \
 	else \
-		echo "error in bumping" ; \
+		echo "====> error in bumping" ; \
+		exit 1 ; \
 	fi
-	git stash pop
 
 
 
@@ -61,6 +64,14 @@ pypi: build
 	python3 -m twine upload dist/*
 	make clean
 
+stash:
+	git stash
+stash_pop:
+	git stash pop
+
+publish: stash
 publish: bump
 publish: pypi
-publish: pypi_version
+publish:
+	@echo "====> published $(shell make pypi_version)"
+	git stash pop
