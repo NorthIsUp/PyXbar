@@ -45,8 +45,8 @@ bump:
 		git push origin v${NEXT_VERSION} ; \
 	else \
 		echo "error in bumping" ; \
-		git stash pop ; \
 	fi
+	git stash pop
 
 
 
