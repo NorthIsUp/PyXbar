@@ -36,14 +36,17 @@ bump:
 		sed -i "s/^__version__\s*=\s*\".*\"$$/__version__ = \"${NEXT_VERSION}\"/" \
 		${VERSION_FILE} \
 	))
-	ifeq ($(shell make local_version), ${NEXT_VERSION})  # bump worked
-		@echo "bumping from published version: ${CURRENT_VERSION} -> to ${NEXT_VERSION}"
-		git commit -m "Publish v${NEXT_VERSION}"
-		git tag -a v${NEXT_VERSION} -m "Publish v${NEXT_VERSION}"
-		git push origin v${NEXT_VERSION}
-	else  # bump failed
-		@echo "error in bumping"
-	git stash pop
+	$(eval LOCAL_VERSION=$(shell make local_version))
+
+	if [ ${LOCAL_VERSION} = ${NEXT_VERSION} ] ; then \
+		echo "bumping from published version: ${CURRENT_VERSION} -> to ${NEXT_VERSION}" ; \
+		git commit -m "Publish v${NEXT_VERSION}" ; \
+		git tag -a v${NEXT_VERSION} -m "Publish v${NEXT_VERSION}" ; \
+		git push origin v${NEXT_VERSION} ; \
+	else \
+		echo "error in bumping" ; \
+		git stash pop ; \
+	fi
 
 
 
