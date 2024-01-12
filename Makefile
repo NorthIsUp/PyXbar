@@ -1,4 +1,6 @@
-RSS=
+RSS=https://pypi.org/rss/project/pyxbar/releases.xml
+VERSION_FILE=pyxbar/__init__.py
+
 .PHONY: clean check_version local_version
 
 guard-env-%:
@@ -11,25 +13,43 @@ guard-env-%:
 
 
 check_version:
-	curl --silent https://pypi.org/rss/project/pyxbar/releases.xml \
-		| awk -F '[<>]' '/title/ { if ($$3 ~ /[0-9].[0-9].[0-9]/){print $$3 ; exit} }'
+	@echo $(shell /usr/bin/curl --silent ${RSS} \
+		| awk -F '[<>]' '/title/ { if ($$3 ~ /[0-9].[0-9].[0-9]/){print $$3 ; exit} }' \
+	)
 
 local_version:
-	cat pyxbar/__init__.py \
-		| awk '/__version__/ {gsub(/"/, "") ; print $$3; exit}'
+	@echo $(shell \
+		awk '/__version__/ {gsub(/"/, "") ; print $$3; exit}' ${VERSION_FILE} \
+	)
 
 clean:
 	rm -rf build dist *.egg-info
 
+bump:
+	git stash
+	$(eval CURRENT_VERSION=$(shell make check_version))
+	$(eval NEXT_VERSION=$(shell \
+		echo "${CURRENT_VERSION}" \
+		| awk -F. '/[0-9]+\./{$$NF++;print}' OFS=. \
+	))
+	$(eval $(shell \
+		sed -i "s/^__version__\s*=\s*\".*\"$$/__version__ = \"${NEXT_VERSION}\"/" \
+		${VERSION_FILE} \
+	))
+	ifeq ($(shell make local_version), ${NEXT_VERSION})  # bump worked
+		@echo "bumping from published version: ${CURRENT_VERSION} -> to ${NEXT_VERSION}"
+		git commit -m "Publish v${NEXT_VERSION}"
+		git tag -a v${NEXT_VERSION} -m "Publish v${NEXT_VERSION}"
+		git push origin v${NEXT_VERSION}
+	else  # bump failed
+		@echo "error in bumping"
+	git stash pop
+
+
+
 build: clean
 	python3 -m pip install --upgrade build
 	python3 -m build
-
-tag: pypi
-	git stash
-	git tag -a $(shell make local_version) -m "Bump version to $(shell make local_version)"
-	git push origin main --tags
-	git stash pop
 
 pypi: guard-env-TWINE_USERNAME
 pypi: guard-env-TWINE_PASSWORD
@@ -38,4 +58,5 @@ pypi: build
 	python3 -m twine upload dist/*
 	make clean
 
-upload: pypi
+publish: bump
+publish: pypi
