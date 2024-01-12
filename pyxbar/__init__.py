@@ -1,3 +1,4 @@
+from .__version__ import __version__ as __version__
 from .config import Config as Config
 from .config import get_config as get_config
 from .menu import Menu as Menu
@@ -19,7 +20,5 @@ from .utils import cache_file as cache_file
 from .utils import camel_to_snake as camel_to_snake
 from .utils import get_in as get_in
 from .utils import strify as strify
-
-__version__ = "0.3.16"
 
 __all__ = ("__version__",)
