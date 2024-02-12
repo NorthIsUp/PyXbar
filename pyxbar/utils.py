@@ -5,20 +5,11 @@ import os
 import re
 from functools import wraps
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Generator,
-    Iterable,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Generator, Iterable, TypeVar, Union
 
 import requests
 
-import __main__
-
-from .types import Numeric, Renderable
+from .types import DividerLiteral, Numeric, Renderable
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
@@ -63,9 +54,13 @@ def camel_to_snake(
 def with_something(
     ret: T,
     key: list[Renderable],
-    *children: Union[Renderable, Iterable[Renderable]],
+    *children: Union[Renderable, Iterable[Renderable], DividerLiteral],
 ) -> T:
     for child in children:
+        if child == "---":
+            from pyxbar.menu_items import Divider
+
+            key.append(Divider())
         if isinstance(child, Iterable):
             key.extend(child)
         else:

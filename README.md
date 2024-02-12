@@ -13,7 +13,7 @@ def install(pkg: str, spec: str = "", cache_dir: Path | str = "~/.cache"):
         requirement = Requirement(spec or pkg)
         assert importlib.metadata.version(requirement.name) in requirement.specifier
     except Exception as e:
-        pip.main(["install", "--upgrade", f"--target={sitep}", spec or pkg])
+        pip.main(["install", "--upgrade", f"--target={sitep}", *(spec or pkg).split()])
         importlib.invalidate_caches()
 
 

@@ -20,7 +20,7 @@ from typing import (
 from typing_extensions import NotRequired, TypedDict, Unpack
 
 from .config import Config, get_config
-from .types import Boolable, Renderable, RenderableGenerator
+from .types import Boolable, DividerLiteral, Renderable, RenderableGenerator
 from .utils import with_something
 
 logger = logging.getLogger()
@@ -53,8 +53,7 @@ class MenuItemKwargs(MenuItemKwargsOptional, total=False):
 
 @dataclass
 class MenuItem(Renderable):
-    """AI is creating summary for
-
+    """
     Attributes:
         title: (str):
             the text of the menu item
@@ -218,31 +217,31 @@ class MenuItem(Renderable):
             for item in self.siblings:
                 yield from item.render(depth)
 
-    def with_submenu(self, *children: Renderable | Iterable[Renderable]) -> Self:
+    def with_submenu(
+        self, *children: Renderable | Iterable[Renderable] | DividerLiteral
+    ) -> Self:
         return with_something(self, self.submenu, *children)
 
-    def with_siblings(self, *children: Renderable | Iterable[Renderable]) -> Self:
+    def with_siblings(
+        self, *children: Renderable | Iterable[Renderable] | DividerLiteral
+    ) -> Self:
         return with_something(self, self.siblings, *children)
 
     @overload
     def with_alternate(
         self, title_or_item: str, **kwargs: Unpack[MenuItemKwargsOptional]
-    ) -> Self:
-        ...
+    ) -> Self: ...
 
     @overload
     def with_alternate(
         self, title_or_item: None = ..., **kwargs: Unpack[MenuItemKwargs]
-    ) -> Self:
-        ...
+    ) -> Self: ...
 
     @overload
-    def with_alternate(self, title_or_item: MenuItemKwargs) -> Self:
-        ...
+    def with_alternate(self, title_or_item: MenuItemKwargs) -> Self: ...
 
     @overload
-    def with_alternate(self, title_or_item: MenuItem) -> Self:
-        ...
+    def with_alternate(self, title_or_item: MenuItem) -> Self: ...
 
     def with_alternate(
         self,

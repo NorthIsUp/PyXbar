@@ -3,15 +3,10 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from inspect import getfile
 from pathlib import Path
-from typing import (
-    Type,
-    TypeVar,
-    cast,
-    get_type_hints,
-)
+from typing import ClassVar, Iterable, Type, TypeVar, cast, get_type_hints
 
 from pyxbar.types import Renderable, RenderableGenerator
 from pyxbar.utils import cache_dir
@@ -24,35 +19,56 @@ logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
 class Config(Renderable):
     DEBUG: bool = False
     MONO_FONT: str = "Andale Mono"
-    CACHE_DIR: Path = cache_dir()
+    CACHE_DIR: Path = field(default_factory=cache_dir, repr=False)
 
-    _errors: list[str] = field(default_factory=list)
-    _warnings: list[str] = field(default_factory=list)
+    _errors: list[str] = field(default_factory=list, init=False, repr=False)
+    _warnings: list[str] = field(default_factory=list, init=False, repr=False)
+
+    prefix: ClassVar[str] = "VAR_"
 
     def __post_init__(self):
-        config_path = Path(f"{getfile(self.__class__)}.vars.json")
-        if not config_path.exists():
-            self.warn(f"{config_path.name} is missing, using defaults")
+        for k in self.config_fields():
+            v = getattr(self, k)
+            if isinstance(v, Path):
+                setattr(self, k, v.expanduser().resolve())
+            if self.DEBUG:
+                logger.debug(f"{k}: {getattr(self, k)}")
 
-        else:
-            config = json.loads(config_path.read_text())
-            hints = get_type_hints(self.__class__)
-            for k in self.__dataclass_fields__:
-                if k == "errors":
-                    continue
+    @classmethod
+    def config_fields(cls) -> Iterable[str]:
+        return [k for k in cls.__dataclass_fields__ if k.isupper()]
 
-                if val := config.get(f"VAR_{k}"):
-                    setattr(self, k, hints[k](val))
-                elif self.DEBUG:
-                    self.warn(f"{k} is not set, using `{getattr(self, k)}`")
+    @classmethod
+    def config_path(cls) -> Path:
+        return Path(f"{getfile(cls)}.vars.json")
 
-                if isinstance(v := getattr(self, k), Path):
-                    setattr(self, k, v := v.expanduser())
-                    if not v.exists():
-                        self.error(f"{k} does not exist at {v}")
+    @classmethod
+    def from_config_file(cls):
+        loaded = json.loads(cls.config_path().read_text())
+        return cls.from_config_dict(loaded)
 
-                if self.DEBUG:
-                    logger.debug(f"{k}: {getattr(self, k)}")
+    @classmethod
+    def from_config_dict(cls, config_dict: dict[str, str]):
+        hints = get_type_hints(cls)
+        return cls(
+            **{
+                k: hints[k](config_dict[f"VAR_{k}"])
+                for k in cls.config_fields()
+                if f"VAR_{k}" in config_dict
+            }
+        )
+
+    @classmethod
+    def get_config(cls):
+        return cls.from_config_file()
+
+    def as_config_dict(self) -> dict[str, str]:
+        return {
+            f"{self.prefix}{k}": str(getattr(self, k)) for k in self.config_fields()
+        }
+
+    def save(self):
+        self.config_path().write_text(json.dumps(self.as_config_dict(), indent=4))
 
     def render(self, depth: int = 0) -> RenderableGenerator:
         from pyxbar import Divider, MenuItem
@@ -99,7 +115,9 @@ def get_config(config_cls: Type[ConfigT] = Config) -> ConfigT:
     if config_cls:
         CONFIG_CLS = config_cls  # type: ignore
 
-    if globals().get("CONFIG"):
-        return CONFIG_CLS(**asdict(CONFIG))  # type: ignore
+    if "CONFIG" in globals() and isinstance(CONFIG, CONFIG_CLS):
+        return cast(ConfigT, CONFIG)
 
-    return cast(ConfigT, CONFIG_CLS())
+    globals()["CONFIG"] = CONFIG_CLS.get_config()
+
+    return get_config(config_cls=config_cls)
