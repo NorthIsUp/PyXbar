@@ -44,7 +44,7 @@ class Config(Renderable):
 
     @classmethod
     def from_config_file(cls):
-        loaded = json.loads(cls.config_path().read_text())
+        loaded = json.loads(cls.config_path().read_text() if cls.config_path().exists() else "{}")
         return cls.from_config_dict(loaded)
 
     @classmethod
