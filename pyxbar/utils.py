@@ -7,6 +7,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Generator, Iterable, TypeVar, Union
 
+import __main__
 import requests
 
 from .types import DividerLiteral, Numeric, Renderable
@@ -134,5 +135,7 @@ def cache_dir(
 @wraps(requests.get)
 def get_and_cache(name: str, url: str, **kwargs: Any) -> requests.Response:
     response = requests.get("get", url, **kwargs)
+    cache_file(name).write_bytes(response.content)
+    return response
     cache_file(name).write_bytes(response.content)
     return response
