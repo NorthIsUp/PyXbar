@@ -1,4 +1,5 @@
 from .config import Config as Config
+from .config import get_config as get_config
 from .menu import Menu as Menu
 from .menu import MenuItem as MenuItem
 from .menu import Renderable as Renderable
