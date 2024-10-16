@@ -11,6 +11,9 @@ import requests
 
 from .types import DividerLiteral, Numeric, Renderable
 
+if not locals().get("__main__"):
+    import __main__
+
 logger = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG, format="=====> %(message)s")
 

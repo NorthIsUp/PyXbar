@@ -16,7 +16,11 @@ class Icon:
     size: int = 20
 
     def __str__(self) -> str:
-        return self.png_base64()
+        return self.base64_encode()
+
+    @property
+    def image(self) -> str:
+        return self.png
 
     @property
     def png(self) -> Path:
@@ -28,10 +32,30 @@ class Icon:
         raise NotImplementedError()
 
     def resize(self, size: int = 0) -> Path:
+        try:
+            return self.png_crush(size)
+        except FileNotFoundError:
+            pass
+
+        return self.sips(size)
+
+    def base64_encode(self, size: int = 0) -> str:
+        return (
+            (
+                base64.encodebytes(self.resize(size or self.size).read_bytes())
+                .decode()
+                .replace("\n", "")
+            )
+            if self.image.exists()
+            else ""
+        )
+
+    def sips(self, size: int = 0, dpi: int = 72, ext: str = "png") -> None:
         size = size or self.size
-        if not (f := self.cache_dir / f"{self.name}.{size}.png").exists():
+
+        if not (f := self.cache_dir / f"{self.name}.{size}.{dpi}dpi.{ext}").exists():
             subprocess.run(
-                f"sips -Z {size} {self.png} --out {f}",
+                f"sips -Z {size} -s formatOptions high -s dpiWidth {dpi} -s dpiHeight {dpi} {self.img} --out {f}",
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -42,6 +66,9 @@ class Icon:
         size = size or self.size
         pngcrush = "/Applications/Xcode.app/Contents/Developer/usr/bin/pngcrush"
 
+        if not Path(pngcrush).exists():
+            raise FileNotFoundError(f"{pngcrush} not found")
+
         if not (f := self.cache_dir / f"{self.name}.{size}.crush.png").exists():
             subprocess.run(
                 f"{pngcrush} -brute {self.resize(size)} {f}",
@@ -50,17 +77,6 @@ class Icon:
                 stderr=subprocess.DEVNULL,
             )
         return f
-
-    def png_base64(self, size: int = 0) -> str:
-        return (
-            (
-                base64.encodebytes(self.png_crush(size or self.size).read_bytes())
-                .decode()
-                .replace("\n", "")
-            )
-            if self.png.exists()
-            else ""
-        )
 
 
 @dataclass
