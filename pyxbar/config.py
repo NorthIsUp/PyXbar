@@ -44,6 +44,8 @@ class Config(Renderable):
 
     @classmethod
     def from_config_file(cls):
+        if not cls.config_path().exists():
+            cls().save()
         loaded = json.loads(cls.config_path().read_text())
         return cls.from_config_dict(loaded)
 
@@ -68,6 +70,8 @@ class Config(Renderable):
         }
 
     def save(self):
+        if not self.config_path().exists():
+            self.config_path().parent.mkdir(parents=True, exist_ok=True)
         self.config_path().write_text(json.dumps(self.as_config_dict(), indent=4))
 
     def render(self, depth: int = 0) -> RenderableGenerator:

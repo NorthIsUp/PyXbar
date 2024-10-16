@@ -19,7 +19,7 @@ class Icon:
         return self.base64_encode()
 
     @property
-    def image(self) -> str:
+    def image(self) -> Path:
         return self.png
 
     @property
@@ -50,12 +50,12 @@ class Icon:
             else ""
         )
 
-    def sips(self, size: int = 0, dpi: int = 72, ext: str = "png") -> None:
+    def sips(self, size: int = 0, dpi: int = 72, ext: str = "png") -> Path:
         size = size or self.size
 
         if not (f := self.cache_dir / f"{self.name}.{size}.{dpi}dpi.{ext}").exists():
             subprocess.run(
-                f"sips -Z {size} -s formatOptions high -s dpiWidth {dpi} -s dpiHeight {dpi} {self.img} --out {f}",
+                f"sips -Z {size} -s formatOptions high -s dpiWidth {dpi} -s dpiHeight {dpi} {self.image} --out {f}",
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -95,6 +95,7 @@ class ServiceIcon(Icon):
         url = f"https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/{self.name}.png"
         response = requests.get(url)
         if OK == response.status_code:
+            f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(response.content)
 
 
