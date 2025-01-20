@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass, field
 from inspect import getfile
 from pathlib import Path
-from typing import ClassVar, Iterable, Type, TypeVar, cast, get_type_hints
+from typing import ClassVar, Iterable, get_type_hints
 
 from pyxbar.types import Renderable, RenderableGenerator
 from pyxbar.utils import cache_dir
@@ -86,9 +86,14 @@ class Config(Renderable):
 
         if self.DEBUG:
             yield from MenuItem(f"🐍 {sys.version}").render()
-            yield from MenuItem("Vars").with_submenu(
-                MenuItem(f"{k}: {getattr(self, k)}") for k in self.__dataclass_fields__
-            ).render(depth)
+            yield from (
+                MenuItem("Vars")
+                .with_submenu(
+                    MenuItem(f"{k}: {getattr(self, k)}")
+                    for k in self.__dataclass_fields__
+                )
+                .render(depth)
+            )
             # yield Cmd(f"📝 Edit Vars", f"open '{__file__}.vars.json'", depth=2)
 
     def error(self, msg: str):
@@ -98,26 +103,3 @@ class Config(Renderable):
     def warn(self, msg: str):
         if msg not in self._warnings:
             self._warnings.append(msg)
-
-
-ConfigT = TypeVar("ConfigT", bound=Config)
-
-CONFIG_CLS: Type[Config]
-CONFIG: Config
-
-
-def get_config(config_cls: Type[ConfigT] = Config) -> ConfigT:
-    global CONFIG_CLS, CONFIG
-
-    if config_cls is globals().get("CONFIG_CLS") is None:
-        raise RuntimeError("CONFIG_CLS is not set")
-
-    if config_cls:
-        CONFIG_CLS = config_cls  # type: ignore
-
-    if "CONFIG" in globals() and isinstance(CONFIG, CONFIG_CLS):
-        return cast(ConfigT, CONFIG)
-
-    globals()["CONFIG"] = CONFIG_CLS.get_config()
-
-    return get_config(config_cls=config_cls)

@@ -9,6 +9,8 @@ from typing import Any, Callable, Generator, Iterable, TypeVar, Union
 
 import requests
 
+from __main__ import __file__ as __main_file__
+
 from .types import DividerLiteral, Numeric, Renderable
 
 logger = logging.getLogger()
@@ -98,7 +100,7 @@ def threshold_traffic_icons(
 
 def cache_path(
     name: str,
-    script: str = __main__.__file__,
+    script: str = __main_file__,
     ensure: Union[Callable[[Path, bool], None], None] = None,
 ) -> Path:
     path = (
@@ -117,7 +119,7 @@ def cache_path(
 
 def cache_file(
     name: str,
-    script: str = __main__.__file__,
+    script: str = __main_file__,
     touch: bool = False,
 ) -> Path:
     return cache_path(name, script, Path.touch if touch else None)
@@ -125,7 +127,7 @@ def cache_file(
 
 def cache_dir(
     name: str = "",
-    script: str = __main__.__file__,
+    script: str = __main_file__,
     mkdir: bool = False,
 ) -> Path:
     return cache_path(name, script, Path.mkdir if mkdir else None)

@@ -16,8 +16,7 @@ from typing import (
     Union,
 )
 
-from pyxbar.config import get_config
-
+from .config import Config
 from .menu import MenuItem
 from .types import Renderable
 from .utils import camel_to_snake, get_in
@@ -80,7 +79,7 @@ class ShellItem(MenuItem):
         if self.config.DEBUG:
             yield MenuItem(
                 title=f"╰─ {self.shell_str(use_cwd=False)}",
-                font=get_config().MONO_FONT,
+                font=Config().MONO_FONT,
                 disabled=True,
             )
 

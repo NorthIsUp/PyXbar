@@ -19,7 +19,7 @@ from typing import (
 
 from typing_extensions import NotRequired, TypedDict, Unpack
 
-from .config import Config, get_config
+from .config import Config
 from .types import Boolable, DividerLiteral, Renderable, RenderableGenerator
 from .utils import with_something
 
@@ -145,10 +145,15 @@ class MenuItem(Renderable):
     submenu: list[Renderable] = field(default_factory=list, init=False)
     siblings: list[Renderable] = field(default_factory=list, init=False)
 
+    _config: Config | None = None
+
     @classmethod
     def _type_hint(cls, key: str, hints: dict[type, dict[str, type]] = {}):
         if cls not in hints:
-            hints[cls] = get_type_hints(cls, globals())
+            import __main__
+
+            # Use __main__.__dict__ to get the globals from the main module
+            hints[cls] = get_type_hints(cls, {**__main__.__dict__, **globals()})
 
         return hints[cls][key]
 
@@ -158,7 +163,7 @@ class MenuItem(Renderable):
 
     @property
     def config(self) -> Config:
-        return get_config()
+        return self._config or Config()
 
     @property
     def logger(self) -> logging.Logger:
